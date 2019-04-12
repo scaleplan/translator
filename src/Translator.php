@@ -2,11 +2,9 @@
 
 namespace Scaleplan\Translator;
 
-use function Scaleplan\DependencyInjection\get_required_container;
 use Scaleplan\Helpers\FileHelper;
 use function Scaleplan\Helpers\get_required_env;
 use Symfony\Component\Translation\Loader\ArrayLoader;
-use Symfony\Component\Translation\Loader\LoaderInterface;
 use Symfony\Component\Translation\Loader\XliffFileLoader;
 use Symfony\Component\Translation\Loader\YamlFileLoader;
 use Symfony\Component\Translation\Translator AS SymfonyTranslator;
@@ -50,7 +48,7 @@ class Translator
     }
 
     /**
-     * Подкгрузить файлы переводов
+     * @throws \Scaleplan\Helpers\Exceptions\EnvNotFoundException
      */
     public function loadTranslatesFromDir() : void
     {
@@ -66,6 +64,8 @@ class Translator
 
     /**
      * @return SymfonyTranslator
+     *
+     * @throws \Scaleplan\Helpers\Exceptions\EnvNotFoundException
      */
     public function getTranslator() : SymfonyTranslator
     {
@@ -75,6 +75,8 @@ class Translator
             $translator->addLoader(static::PHP_LOADER, new ArrayLoader());
             $translator->addLoader(static::YML_LOADER, new YamlFileLoader());
             $translator->addLoader(static::XLF_LOADER, new XliffFileLoader());
+
+            $translator->setFallbackLocales([get_required_env('DEFAULT_LANG')]);
         }
 
         return $translator;
