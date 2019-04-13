@@ -36,23 +36,24 @@ class Translator
      * Translator constructor.
      *
      * @param string|null $lang
-     * @param string|null $translatesDirPath
      *
      * @throws \Scaleplan\Helpers\Exceptions\EnvNotFoundException
      */
-    public function __construct(string $lang = null, string $translatesDirPath = null)
+    public function __construct(string $lang = null)
     {
-        $this->translatesDirPath = $translatesDirPath
-            ?? (get_required_env('BUNDLE_PATH') . get_required_env('TRANSLATES_PATH'));
         $this->lang = $lang ?? get_required_env('DEFAULT_LANG');
     }
 
     /**
+     * @param string|null $translatesDirPath
+     *
      * @throws \Scaleplan\Helpers\Exceptions\EnvNotFoundException
      */
-    public function loadTranslatesFromDir() : void
+    public function loadTranslatesFromDir(string $translatesDirPath = null) : void
     {
-        foreach (FileHelper::getRecursivePaths("{$this->translatesDirPath}/{$this->lang}") as $file) {
+        $translatesDirPath = $translatesDirPath
+            ?? (get_required_env('BUNDLE_PATH') . get_required_env('TRANSLATES_PATH'));
+        foreach (FileHelper::getRecursivePaths("{$translatesDirPath}/{$this->lang}") as $file) {
             $fileInfo = pathinfo($file, PATHINFO_EXTENSION | PATHINFO_FILENAME);
             $ext = $fileInfo['extension'];
             $domain = $fileInfo['filename'];
