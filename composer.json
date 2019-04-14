@@ -1,0 +1,13 @@
+{
+    "name": "scaleplan/translator",
+    "description": "Scaleplan translate component",
+    "autoload": {
+        "psr-4": {
+            "Scaleplan\\Translator\\": "src/"
+        }
+    },
+    "require": {
+        "php": ">=7.2",
+        "symfony/translation": "dev-master"
+    }
+}
