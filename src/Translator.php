@@ -42,6 +42,7 @@ class Translator
     public function __construct(string $lang = null)
     {
         $this->lang = $lang ?? get_required_env('DEFAULT_LANG');
+        $this->translatesDirPath = get_required_env('BUNDLE_PATH') . get_required_env('TRANSLATES_PATH');
     }
 
     /**
@@ -51,10 +52,9 @@ class Translator
      */
     public function loadTranslatesFromDir(string $translatesDirPath = null) : void
     {
-        $translatesDirPath = $translatesDirPath
-            ?? (get_required_env('BUNDLE_PATH') . get_required_env('TRANSLATES_PATH'));
+        $translatesDirPath = $translatesDirPath ?: $this->translatesDirPath;
         foreach (FileHelper::getRecursivePaths("{$translatesDirPath}/{$this->lang}") as $file) {
-            $fileInfo = pathinfo($file, PATHINFO_EXTENSION | PATHINFO_FILENAME);
+            $fileInfo = pathinfo($file);
             $ext = $fileInfo['extension'];
             $domain = $fileInfo['filename'];
             if (\in_array($ext, static::SUPPORTING_LOADERS, true)) {
