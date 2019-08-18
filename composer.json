@@ -13,4 +13,8 @@
         "php": ">=7.2",
         "symfony/translation": "*"
     }
+    ,
+    "require-dev": {
+        "roave/security-advisories": "dev-master"
+    }
 }
