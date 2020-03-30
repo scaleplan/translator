@@ -11,14 +11,15 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * @param string $id
  * @param array $parameters
  *
- * @return string|null
+ * @return string
+ *
  * @throws \ReflectionException
  * @throws \Scaleplan\DependencyInjection\Exceptions\ContainerTypeNotSupportingException
  * @throws \Scaleplan\DependencyInjection\Exceptions\DependencyInjectionException
  * @throws \Scaleplan\DependencyInjection\Exceptions\ParameterMustBeInterfaceNameOrClassNameException
  * @throws \Scaleplan\DependencyInjection\Exceptions\ReturnTypeMustImplementsInterfaceException
  */
-function translate(string $id, array $parameters = []) : ?string
+function translate(string $id, array $parameters = []) : string
 {
     /** @var App $app */
     $app = get_static_container(App::class);
@@ -30,5 +31,5 @@ function translate(string $id, array $parameters = []) : ?string
 
     $translation = $translator->trans($id, $parameters, $domain);
 
-    return $translation !== $id ? $translation : null;
+    return $translation !== $id ? $translation : '';
 }
