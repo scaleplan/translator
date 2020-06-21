@@ -3,11 +3,9 @@
 namespace Scaleplan\Translator;
 
 use Scaleplan\Helpers\FileHelper;
-use function Scaleplan\Helpers\get_required_env;
-use Symfony\Component\Translation\Loader\ArrayLoader;
-use Symfony\Component\Translation\Loader\XliffFileLoader;
 use Symfony\Component\Translation\Loader\YamlFileLoader;
-use Symfony\Component\Translation\Translator AS SymfonyTranslator;
+use Symfony\Component\Translation\Translator as SymfonyTranslator;
+use function Scaleplan\Helpers\get_required_env;
 
 /**
  * Class Translator
@@ -22,10 +20,13 @@ class Translator
 
     public const SUPPORTING_LOADERS = [self::PHP_LOADER, self::YML_LOADER, self::XLF_LOADER,];
 
+    public const DEFAULT_LOCALE        = 'en_US';
+    public const SECOND_DEFAULT_LOCALE = 'ru_RU';
+
     /**
      * @var string
      */
-    protected $lang;
+    protected $locale;
 
     /**
      * @var string
@@ -33,53 +34,96 @@ class Translator
     protected $translatesDirPath;
 
     /**
+     * @var SymfonyTranslator
+     */
+    protected $translator;
+
+    /**
      * Translator constructor.
      *
-     * @param string|null $lang
+     * @param string|null $locale
      *
      * @throws \Scaleplan\Helpers\Exceptions\EnvNotFoundException
      */
-    public function __construct(string $lang = null)
+    public function __construct(string $locale = null)
     {
-        $this->lang = $lang ?? get_required_env('DEFAULT_LANG');
+        $this->locale = $locale ?? get_required_env('DEFAULT_LANG');
         $this->translatesDirPath = get_required_env('BUNDLE_PATH') . get_required_env('TRANSLATES_PATH');
     }
 
     /**
      * @param string|null $translatesDirPath
      *
+     * @throws TranslatableException
+     * @throws \ReflectionException
+     * @throws \Scaleplan\DependencyInjection\Exceptions\ContainerTypeNotSupportingException
+     * @throws \Scaleplan\DependencyInjection\Exceptions\DependencyInjectionException
+     * @throws \Scaleplan\DependencyInjection\Exceptions\ParameterMustBeInterfaceNameOrClassNameException
+     * @throws \Scaleplan\DependencyInjection\Exceptions\ReturnTypeMustImplementsInterfaceException
      * @throws \Scaleplan\Helpers\Exceptions\EnvNotFoundException
      */
     public function loadTranslatesFromDir(string $translatesDirPath = null) : void
     {
+        $locale = $this->locale;
         $translatesDirPath = $translatesDirPath ?: $this->translatesDirPath;
-        foreach (FileHelper::getRecursivePaths("{$translatesDirPath}/{$this->lang}") as $file) {
-            $fileInfo = pathinfo($file);
+        $lang = explode('_', $locale)[0];
+        if (!is_dir("$translatesDirPath/$locale")) {
+            $similar = glob("$translatesDirPath/$lang*");
+            if ($similar) {
+                $locale = basename($similar[0]);
+            } else {
+                $locale = static::DEFAULT_LOCALE;
+            }
+        }
+
+        foreach (FileHelper::getRecursivePaths("$translatesDirPath/" . static::DEFAULT_LOCALE) as $ruFile) {
+            $fileInfo = pathinfo($ruFile);
             $ext = $fileInfo['extension'];
+            if (!in_array($ext, static::SUPPORTING_LOADERS, true)) {
+                throw new TranslatableException('Translate file extension not supported.');
+            }
+
             $domain = $fileInfo['filename'];
-            if (\in_array($ext, static::SUPPORTING_LOADERS, true)) {
-                $this->getTranslator()->addResource($ext, $file, $this->lang, $domain);
+            $this->getTranslator()->addResource($ext, $ruFile, static::DEFAULT_LOCALE, $domain);
+            $this->getTranslator()->addResource(
+                $ext,
+                str_replace(static::DEFAULT_LOCALE, static::SECOND_DEFAULT_LOCALE, $ruFile),
+                static::SECOND_DEFAULT_LOCALE,
+                $domain
+            );
+            if (in_array($this->locale, [static::DEFAULT_LOCALE, static::SECOND_DEFAULT_LOCALE,], true)) {
+                continue;
+            }
+
+            $file = str_replace(static::DEFAULT_LOCALE, $locale, $ruFile);
+            if (file_exists($file)) {
+                $this->getTranslator()->addResource($ext, $file, $this->locale, $domain);
+                continue;
+            }
+
+            $similar = glob("$translatesDirPath/$lang*");
+            if ($similar
+                && file_exists($fallbackFile = str_replace("$translatesDirPath/{$locale}", $similar[0], $file))
+            ) {
+                $this->getTranslator()->addResource($ext, $fallbackFile, $this->locale, $domain);
             }
         }
     }
 
     /**
      * @return SymfonyTranslator
-     *
-     * @throws \Scaleplan\Helpers\Exceptions\EnvNotFoundException
      */
     public function getTranslator() : SymfonyTranslator
     {
-        static $translator;
-        if (!$translator) {
-            $translator = new SymfonyTranslator($this->lang);
-            $translator->addLoader(static::PHP_LOADER, new ArrayLoader());
-            $translator->addLoader(static::YML_LOADER, new YamlFileLoader());
-            $translator->addLoader(static::XLF_LOADER, new XliffFileLoader());
+        if (!$this->translator) {
+            $this->translator = new SymfonyTranslator($this->locale);
+//            $translator->addLoader(static::PHP_LOADER, new ArrayLoader());
+            $this->translator->addLoader(static::YML_LOADER, new YamlFileLoader());
+//            $translator->addLoader(static::XLF_LOADER, new XliffFileLoader());
 
-            $translator->setFallbackLocales([get_required_env('DEFAULT_LANG')]);
+            $this->translator->setFallbackLocales(['en_US', 'ru_RU',]);
         }
 
-        return $translator;
+        return $this->translator;
     }
 }
