@@ -22,6 +22,10 @@ use function Scaleplan\DependencyInjection\get_static_container;
  */
 function translate(string $id, array $parameters = [], string $locale = null) : string
 {
+    if (!$id) {
+        return '';
+    }
+
     /** @var App $app */
     $app = get_static_container(App::class);
     if (!$locale) {
