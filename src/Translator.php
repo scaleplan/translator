@@ -57,6 +57,27 @@ class Translator
     }
 
     /**
+     * @param string $locale
+     * @param string $translatesDirPath
+     *
+     * @return string
+     */
+    public static function getRealLocale(string $locale, string $translatesDirPath) : string
+    {
+        $lang = explode('_', $locale)[0];
+        if ($lang && !is_dir("$translatesDirPath/$locale")) {
+            $similar = glob("$translatesDirPath/$lang*");
+            if ($similar) {
+                return basename($similar[0]);
+            }
+
+            return static::DEFAULT_LOCALE;
+        }
+
+        return $locale;
+    }
+
+    /**
      * @param string|null $translatesDirPath
      *
      * @throws TranslatableException
@@ -65,21 +86,12 @@ class Translator
      * @throws \Scaleplan\DependencyInjection\Exceptions\DependencyInjectionException
      * @throws \Scaleplan\DependencyInjection\Exceptions\ParameterMustBeInterfaceNameOrClassNameException
      * @throws \Scaleplan\DependencyInjection\Exceptions\ReturnTypeMustImplementsInterfaceException
-     * @throws \Scaleplan\Helpers\Exceptions\EnvNotFoundException
      */
     public function loadTranslatesFromDir(string $translatesDirPath = null) : void
     {
-        $locale = $this->locale;
         $translatesDirPath = $translatesDirPath ?: $this->translatesDirPath;
+        $locale = static::getRealLocale($this->locale, $translatesDirPath);
         $lang = explode('_', $locale)[0];
-        if (!is_dir("$translatesDirPath/$locale")) {
-            $similar = glob("$translatesDirPath/$lang*");
-            if ($similar) {
-                $locale = basename($similar[0]);
-            } else {
-                $locale = static::DEFAULT_LOCALE;
-            }
-        }
 
         foreach (FileHelper::getRecursivePaths("$translatesDirPath/" . static::DEFAULT_LOCALE) as $ruFile) {
             $fileInfo = pathinfo($ruFile);
@@ -108,7 +120,7 @@ class Translator
 
             $similar = glob("$translatesDirPath/$lang*");
             if ($similar
-                && file_exists($fallbackFile = str_replace("$translatesDirPath/{$locale}", $similar[0], $file))
+                && file_exists($fallbackFile = str_replace("$translatesDirPath/$locale", $similar[0], $file))
             ) {
                 $this->getTranslator()->addResource($ext, $fallbackFile, $this->locale, $domain);
             }
