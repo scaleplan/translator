@@ -93,18 +93,19 @@ class Translator
         $locale = static::getRealLocale($this->locale, $translatesDirPath);
         $lang = explode('_', $locale)[0];
 
-        foreach (FileHelper::getRecursivePaths("$translatesDirPath/" . static::DEFAULT_LOCALE) as $ruFile) {
-            $fileInfo = pathinfo($ruFile);
+        foreach (FileHelper::getRecursivePaths("$translatesDirPath/" . static::DEFAULT_LOCALE) as $enFile) {
+            $fileInfo = pathinfo($enFile);
             $ext = $fileInfo['extension'];
             if (!in_array($ext, static::SUPPORTING_LOADERS, true)) {
                 throw new TranslatableException('Translate file extension not supported.');
             }
 
             $domain = $fileInfo['filename'];
-            $this->getTranslator()->addResource($ext, $ruFile, static::DEFAULT_LOCALE, $domain);
-            $this->getTranslator()->addResource(
+            $this->getTranslator()->addResource($ext, $enFile, static::DEFAULT_LOCALE, $domain);
+            $ruFile = str_replace(static::DEFAULT_LOCALE, static::SECOND_DEFAULT_LOCALE, $enFile);
+            file_exists($ruFile) && $this->getTranslator()->addResource(
                 $ext,
-                str_replace(static::DEFAULT_LOCALE, static::SECOND_DEFAULT_LOCALE, $ruFile),
+                $ruFile,
                 static::SECOND_DEFAULT_LOCALE,
                 $domain
             );
@@ -112,7 +113,7 @@ class Translator
                 continue;
             }
 
-            $file = str_replace(static::DEFAULT_LOCALE, $locale, $ruFile);
+            $file = str_replace(static::DEFAULT_LOCALE, $locale, $enFile);
             if (file_exists($file)) {
                 $this->getTranslator()->addResource($ext, $file, $this->locale, $domain);
                 continue;
