@@ -2,7 +2,7 @@
 
 namespace Scaleplan\Translator;
 
-use Scaleplan\Helpers\FileHelper;
+use Scaleplan\File\FileHelper;
 use Symfony\Component\Translation\Loader\YamlFileLoader;
 use Symfony\Component\Translation\Translator as SymfonyTranslator;
 use function Scaleplan\Helpers\get_required_env;
